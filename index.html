@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ハンドアウト診断</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+--bg-app:      color-mix(in srgb, #4b84dd 5%, #f4f4f4);
+--bg-card:     color-mix(in srgb, #4b84dd 2%, #f8f8f8);
+--bg-btn:      color-mix(in srgb, #4b84dd 5%, #f4f4f4);
+--text-main:   #333333;
+--text-sub:    #858585;
+--accent:      #4b84dd;
+--accent-dim:  #4b84dd26;
+--accent-text: #ffffff;
+--border:      rgba(0, 0, 0, 0.08);
+--radius: 16px;
+--font: 'Outfit', 'Noto Sans JP', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+font-family: var(--font);
+background: var(--bg-app);
+color: var(--text-main);
+min-height: 100vh;
+display: flex;
+align-items: center;
+justify-content: center;
+padding: 20px;
+}
+.quiz-container {
+width: 100%;
+max-width: 550px;
+background: var(--bg-card);
+border: 1px solid var(--border);
+border-radius: var(--radius);
+padding: 40px 30px;
+box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+min-height: 420px;
+display: flex;
+flex-direction: column;
+justify-content: center;
+}
+h1 {
+font-size: 26px;
+font-weight: 800;
+margin-bottom: 16px;
+text-align: center;
+line-height: 1.3;
+letter-spacing: -0.5px;
+}
+.desc {
+font-size: 15px;
+color: var(--text-sub);
+line-height: 1.6;
+margin-bottom: 30px;
+text-align: center;
+}
+.progress-bar-container {
+width: 100%;
+height: 6px;
+background: var(--border);
+border-radius: 3px;
+margin-bottom: 32px;
+overflow: hidden;
+}
+.progress-bar-fill {
+height: 100%;
+background: var(--accent);
+width: 0%;
+transition: width 0.3s ease;
+}
+.q-text {
+font-size: 18px;
+font-weight: 700;
+margin-bottom: 24px;
+line-height: 1.5;
+}
+.btn-action {
+display: block;
+width: 100%;
+padding: 16px 20px;
+background: var(--bg-btn);
+border: 1px solid var(--border);
+border-radius: 12px;
+color: var(--text-main);
+font-size: 15px;
+font-weight: 500;
+text-align: left;
+cursor: pointer;
+margin-bottom: 12px;
+transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
+font-family: var(--font);
+}
+.btn-action:hover {
+background: var(--bg-card);
+border-color: var(--accent);
+transform: translateY(-2px);
+box-shadow: 0 4px 12px var(--accent-dim);
+}
+.btn-start, .btn-restart {
+display: inline-flex;
+align-items: center;
+justify-content: center;
+padding: 14px 36px;
+background: var(--accent);
+border: none;
+border-radius: 30px;
+color: var(--accent-text);
+font-size: 16px;
+font-weight: 700;
+cursor: pointer;
+transition: all 0.2s;
+margin: 0 auto;
+font-family: var(--font);
+}
+.btn-start:hover, .btn-restart:hover {
+opacity: 0.9;
+box-shadow: 0 0 20px var(--accent-dim);
+transform: scale(1.03);
+}
+.result-name {
+font-size: 28px;
+font-weight: 800;
+color: var(--accent);
+margin-bottom: 16px;
+text-align: center;
+}
+.result-desc {
+font-size: 15px;
+line-height: 1.7;
+background: var(--bg-app);
+padding: 20px;
+border-radius: 12px;
+border: 1px solid var(--border);
+margin-bottom: 30px;
+white-space: pre-wrap;
+}
+.fade-transition { animation: fadeIn 0.4s ease-out forwards; }
+@keyframes fadeIn {
+from { opacity: 0; transform: translateY(8px); }
+to   { opacity: 1; transform: translateY(0); }
+}
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="quiz-container">
+<!-- スタート画面 -->
+<div id="screen-start" class="fade-transition">
+<h1>ハンドアウト診断</h1>
+<p class="desc">あくまで参考程度に。事前情報でやりたいハンドアウトがあったらそっちを優先したほうがいい</p>
+<div style="display:flex;justify-content:center">
+<button class="btn-start" onclick="startQuiz()">診断を始める</button>
+</div>
+</div>
+<!-- 質問画面 -->
+<div id="screen-quiz" class="hidden fade-transition">
+<div class="progress-bar-container">
+<div id="progress-bar" class="progress-bar-fill"></div>
+</div>
+<div id="question-text" class="q-text"></div>
+<div id="choices-container"></div>
+</div>
+<!-- 結果画面 -->
+<div id="screen-result" class="hidden fade-transition">
+<h1>あなたの診断結果</h1>
+<div id="result-name" class="result-name"></div>
+<div id="result-desc" class="result-desc"></div>
+<div style="display:flex;justify-content:center">
+<button class="btn-restart" onclick="restartQuiz()">もう一度診断する</button>
+</div>
+</div>
+</div>
+<script>
+const results = [{"id":"result_1787587241640_69apy","description":"通過は大変でもシステムは好きかも","name":"キーパー向き"},{"description":"所属：警視庁　刑事部　捜査第一課\n殺人や強盗などの凶悪犯罪の捜査を捜査を担当する。\n霊札：かるた\n主に正面から殺人事件を捜査する立場。王道な刑事のロールプレイがしたい人向け。","id":"result_1787587259369_2u35q","name":"HO壱 和魂"},{"name":"HO弐 荒魂","id":"result_1787587274010_ekshc","description":"所属：警視庁　刑事部　暴力団対策課\n暴力団組織の壊滅を目的とし、分析や捜査を担当する。\n霊札：花札\n主に極道組織との関連を調査し、対応する立場。価値観の変化や正義について考えるのが好きな人向け。"},{"description":"所属：警視庁　生活安全部　生活環境課\n各種環境保全や、銃砲刀剣類の取締りと捜査を担当する。\n霊札：タロット\n主に危険物などを取り扱い、管理する立場。刀が好きな人か全員助けて生きて帰りたい人向け。","id":"result_1787587274297_gf4pv","name":"HO参 幸魂"},{"id":"result_1787587274908_rgpul","description":"所属：警察庁　警備局　公安課　異常事件対策室\n現代科学で未解明、未証明のものが関連した事件の捜査を担当する。\n霊札：トランプ\n主に科学で解明されていない事象に対応する立場。ちょっと特殊なことをやりたい人向け。","name":"HO肆 奇魂"},{"description":"癖のあるシナリオなのでやめといたほうがいいかも","id":"result_1787587301308_zx9fu","name":"このシナリオに向いていません"}];
+const questions = [{"text":"得意かどうかはともかく、推理や自由な探索が好き","id":"q_1787587333709","choices":[{"scores":{"result_1787587274908_rgpul":10,"result_1787587274297_gf4pv":10,"result_1787587259369_2u35q":10,"result_1787587274010_ekshc":10},"text":"とてもそう"},{"text":"挑戦したい","scores":{"result_1787587274908_rgpul":5,"result_1787587274010_ekshc":5,"result_1787587274297_gf4pv":5,"result_1787587259369_2u35q":5}},{"text":"エモシじゃなきゃ嫌","scores":{"result_1787587301308_zx9fu":10}},{"scores":{"result_1787587241640_69apy":5,"result_1787587301308_zx9fu":5},"text":"特になんとも"}]},{"choices":[{"scores":{"result_1787587259369_2u35q":10},"text":"正面から堅実に王道を行く"},{"scores":{"result_1787587274010_ekshc":10},"text":"交渉で危ない橋を渡る"},{"text":"設定や情報を整理する","scores":{"result_1787587274297_gf4pv":10}},{"scores":{"result_1787587274908_rgpul":10},"text":"少し違った角度から見る"},{"text":"この中にはない","scores":{"result_1787587241640_69apy":10}}],"text":"好きな立ち回りは？","id":"q_1787588617444"},{"id":"q_1787588804734","text":"得意な頭の使い方は？","choices":[{"text":"冷静に情報精査ができる","scores":{"result_1787587259369_2u35q":10}},{"scores":{"result_1787587274010_ekshc":10},"text":"咄嗟に先を見据えた判断ができる"},{"text":"固有名詞をたくさん覚えられる","scores":{"result_1787587274297_gf4pv":10}},{"text":"一癖ある情報を噛み砕ける","scores":{"result_1787587274908_rgpul":10}},{"text":"全部そんなに好きじゃない","scores":{"result_1787587301308_zx9fu":10}}]},{"text":"得意な役回りは？","id":"q_1787588914957","choices":[{"text":"事件解決に向けてみんなを引っ張りたい","scores":{"result_1787587259369_2u35q":10}},{"text":"交渉役に回って有利に話を運びたい","scores":{"result_1787587274010_ekshc":5}},{"text":"謎解きをしてみんなをサポート","scores":{"result_1787587274297_gf4pv":5}},{"scores":{"result_1787587274908_rgpul":5},"text":"みんなが知らない情報を整理"},{"text":"どれもあんまり……","scores":{"result_1787587301308_zx9fu":5}},{"text":"なんでもやれます！","scores":{"result_1787587259369_2u35q":5,"result_1787587274010_ekshc":5,"result_1787587274297_gf4pv":5,"result_1787587274908_rgpul":5}}]},{"id":"q_1787656694168","text":"好きなNPCのタイプは？","choices":[{"text":"好奇心旺盛なこども","scores":{"result_1787587259369_2u35q":10}},{"text":"面倒見の良い兄貴肌","scores":{"result_1787587274010_ekshc":10}},{"text":"温厚な大人の女性","scores":{"result_1787587274297_gf4pv":10}},{"text":"掴みどころのない男性","scores":{"result_1787587274908_rgpul":10}},{"text":"選べない！！！","scores":{"result_1787587241640_69apy":5}}]}];
+let currentIdx = 0;
+const scores = {};
+results.forEach(r => { scores[r.id] = 0; });
+function show(id) {
+['screen-start','screen-quiz','screen-result'].forEach(s => {
+document.getElementById(s).classList.toggle('hidden', s !== id);
+});
+}
+function startQuiz() {
+currentIdx = 0;
+Object.keys(scores).forEach(k => { scores[k] = 0; });
+show('screen-quiz');
+renderQuestion();
+}
+function renderQuestion() {
+if (questions.length === 0) { showResult(); return; }
+const q = questions[currentIdx];
+document.getElementById('progress-bar').style.width = (currentIdx / questions.length * 100) + '%';
+document.getElementById('question-text').textContent = q.text;
+const container = document.getElementById('choices-container');
+container.innerHTML = '';
+q.choices.forEach(choice => {
+const btn = document.createElement('button');
+btn.className = 'btn-action';
+btn.textContent = choice.text;
+btn.onclick = () => selectChoice(choice);
+container.appendChild(btn);
+});
+}
+function selectChoice(choice) {
+if (choice.scores) {
+Object.keys(choice.scores).forEach(id => {
+if (scores[id] !== undefined) scores[id] += choice.scores[id];
+});
+}
+currentIdx++;
+if (currentIdx < questions.length) {
+const el = document.getElementById('screen-quiz');
+el.classList.remove('fade-transition');
+void el.offsetWidth;
+el.classList.add('fade-transition');
+renderQuestion();
+} else {
+showResult();
+}
+}
+function showResult() {
+let maxScore = -Infinity;
+let top = results[0] || { name: '該当結果なし', description: '診断タイプが登録されていません。' };
+results.forEach(r => { if (scores[r.id] > maxScore) { maxScore = scores[r.id]; top = r; } });
+document.getElementById('result-name').textContent = top.name;
+document.getElementById('result-desc').textContent = top.description;
+show('screen-result');
+}
+function restartQuiz() { show('screen-start'); }
+</script>
+</body>
+</html>
